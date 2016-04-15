@@ -1,0 +1,33 @@
+{
+    "name": "icicleio/cache",
+    "description": "Asynchronous caching interface for Icicle.",
+    "keywords": [
+        "cache",
+        "asynchronous",
+        "async"
+    ],
+    "homepage": "http://icicle.io",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Aaron Piotrowski",
+            "email": "aaron@icicle.io"
+        }
+    ],
+    "require": {
+        "icicleio/icicle": "^0.9"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^4.8"
+    },
+    "autoload": {
+        "psr-4": {
+            "Icicle\\Cache\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Icicle\\Tests\\Cache\\": "tests"
+        }
+    }
+}
