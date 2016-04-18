@@ -92,7 +92,7 @@ class MemoryCacheTest extends \PHPUnit_Framework_TestCase
         $coroutine = CoroutineNS\create(function () {
             $key = 'key';
             $value = 'value';
-            $expiration = 0.1;
+            $expiration = 1;
 
             yield $this->cache->set($key, $value, $expiration);
 
@@ -113,7 +113,7 @@ class MemoryCacheTest extends \PHPUnit_Framework_TestCase
             $key = 'key';
             $value1 = 'value1';
             $value2 = 'value2';
-            $expiration = 0.1;
+            $expiration = 1;
 
             yield $this->cache->set($key, $value1);
 
@@ -137,7 +137,7 @@ class MemoryCacheTest extends \PHPUnit_Framework_TestCase
             $key = 'key';
             $value1 = 'value1';
             $value2 = 'value2';
-            $expiration = 0.1;
+            $expiration = 1;
 
             yield $this->cache->set($key, $value1, $expiration);
 
@@ -162,8 +162,8 @@ class MemoryCacheTest extends \PHPUnit_Framework_TestCase
             $key = 'key';
             $value1 = 'value1';
             $value2 = 'value2';
-            $expiration1 = 0.5;
-            $expiration2 = 0.1;
+            $expiration1 = 3;
+            $expiration2 = 1;
 
             yield $this->cache->set($key, $value1, $expiration1);
 
@@ -189,8 +189,8 @@ class MemoryCacheTest extends \PHPUnit_Framework_TestCase
         $coroutine = CoroutineNS\create(function () {
             $key = 'key';
             $value = 'value';
-            $expiration = 0.3;
-            $sleep = 0.2;
+            $expiration = 3;
+            $sleep = 1;
 
             yield $this->cache->set($key, $value, $expiration);
 
