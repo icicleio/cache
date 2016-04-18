@@ -12,7 +12,7 @@ interface Cache
      *
      * @resolve bool
      */
-    public function exists($key);
+    public function exists(string $key): \Generator;
 
     /**
      * @coroutine
@@ -23,7 +23,7 @@ interface Cache
      *
      * @resolve mixed|null Null returned if the key did not exist.
      */
-    public function get($key);
+    public function get(string $key): \Generator;
 
     /**
      * @coroutine
@@ -33,13 +33,13 @@ interface Cache
      *
      * @param string $key
      * @param mixed $value
-     * @param int $expiration
+     * @param float $expiration
      *
      * @return \Generator
      *
      * @resolve bool
      */
-    public function set($key, $value, $expiration = 0);
+    public function set(string $key, $value, int $expiration = 0): \Generator;
 
     /**
      * @coroutine
@@ -52,7 +52,7 @@ interface Cache
      *
      * @resolve bool True if the value was added to the cache, false if the key was already in the cache.
      */
-    public function add($key, $value, $expiration = 0);
+    public function add(string $key, $value, int $expiration = 0): \Generator;
     
     /**
      * @coroutine
@@ -65,7 +65,7 @@ interface Cache
      * 
      * @resolve bool True if the value was replaced, false if the key was not in the cache.
      */
-    public function replace($key, $value, $expiration = 0);
+    public function replace(string $key, $value, int $expiration = 0): \Generator;
 
     /**
      * @coroutine
@@ -76,7 +76,7 @@ interface Cache
      *
      * @resolve bool
      */
-    public function delete($key);
+    public function delete(string $key): \Generator;
 
     /**
      * @coroutine
@@ -88,5 +88,5 @@ interface Cache
      *
      * @resolve mixed Return/resolution value of $callback.
      */
-    public function update($key, callable $callback, $expiration = 0);
+    public function update(string $key, callable $callback, int $expiration = 0): \Generator;
 }

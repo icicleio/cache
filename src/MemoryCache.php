@@ -1,6 +1,7 @@
 <?php
 namespace Icicle\Cache;
 
+use Icicle\Awaitable\Awaitable;
 use Icicle\Awaitable\Delayed;
 use Icicle\Coroutine;
 use Icicle\Exception\InvalidArgumentError;
@@ -31,14 +32,14 @@ class MemoryCache implements Cache
 
     public function __construct()
     {
-        $this->timerCallback = Coroutine\wrap(function (Timer $timer) {
+        $this->timerCallback = Coroutine\wrap(function (Timer $timer): \Generator {
             $key = $timer->getData();
 
-            yield $this->wait($key); // Wait if key is locked.
+            yield from $this->wait($key); // Wait if key is locked.
 
             // Delete only if value has not been changed.
             if (isset($this->timers[$key]) && $timer === $this->timers[$key]) {
-                yield $this->delete($key);
+                yield from $this->delete($key);
             }
         });
     }
@@ -46,77 +47,65 @@ class MemoryCache implements Cache
     /**
      * {@inheritdoc}
      */
-    public function exists($key)
+    public function exists(string $key): \Generator
     {
-        $key = (string) $key;
+        yield from $this->wait($key);
 
-        yield $this->wait($key);
-
-        yield array_key_exists($key, $this->data);
+        return array_key_exists($key, $this->data);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function get($key)
+    public function get(string $key): \Generator
     {
-        $key = (string) $key;
+        yield from $this->wait($key);
 
-        yield $this->wait($key);
-
-        yield $this->fetch($key);
+        return $this->fetch($key);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function set($key, $value, $expiration = 0)
+    public function set(string $key, $value, int $expiration = 0): \Generator
     {
-        $key = (string) $key;
-
-        yield $this->wait($key);
+        yield from $this->wait($key);
 
         $this->put($key, $value, $expiration);
 
-        yield true;
+        return true;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function add($key, $value, $expiration = 0)
+    public function add(string $key, $value, int $expiration = 0): \Generator
     {
-        $key = (string) $key;
-
-        yield $this->wait($key);
+        yield from $this->wait($key);
 
         if (isset($this->data[$key])) {
-            yield false;
-            return;
+            return false;
         }
 
         $this->put($key, $value, $expiration);
 
-        yield true;
+        return true;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function replace($key, $value, $expiration = 0)
+    public function replace(string $key, $value, int $expiration = 0): \Generator
     {
-        $key = (string) $key;
-
-        yield $this->wait($key);
+        yield from $this->wait($key);
 
         if (!isset($this->data[$key])) {
-            yield false;
-            return;
+            return false;
         }
 
         $this->put($key, $value, $expiration);
 
-        yield true;
+        return true;
     }
 
     /**
@@ -124,7 +113,7 @@ class MemoryCache implements Cache
      *
      * @return mixed
      */
-    protected function fetch($key)
+    protected function fetch(string $key)
     {
         if (!isset($this->data[$key])) {
             return;
@@ -143,7 +132,7 @@ class MemoryCache implements Cache
      * @param mixed $value
      * @param int $expiration
      */
-    protected function put($key, $value, $expiration = 0)
+    protected function put(string $key, $value, int $expiration = 0)
     {
         $this->data[$key] = $value;
 
@@ -161,11 +150,9 @@ class MemoryCache implements Cache
     /**
      * {@inheritdoc}
      */
-    public function delete($key)
+    public function delete(string $key): \Generator
     {
-        $key = (string) $key;
-
-        yield $this->wait($key);
+        yield from $this->wait($key);
 
         unset($this->data[$key]);
 
@@ -174,28 +161,33 @@ class MemoryCache implements Cache
             unset($this->timers[$key]);
         }
 
-        yield true;
+        return true;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function update($key, callable $callback, $expiration = 0)
+    public function update(string $key, callable $callback, int $expiration = 0): \Generator
     {
-        $key = (string) $key;
-
-        yield $this->wait($key);
+        yield from $this->wait($key);
 
         $this->lock($key);
 
         try {
-            $result = (yield $callback(isset($this->data[$key]) ? $this->data[$key] : null));
+            $result = $callback(isset($this->data[$key]) ? $this->data[$key] : null);
+
+            if ($result instanceof \Generator) {
+                $result = yield from $result;
+            } elseif ($result instanceof Awaitable) {
+                $result = yield $result;
+            }
+
             $this->put($key, $result, $expiration);
         } finally {
             $this->unlock($key);
         }
 
-        yield $result;
+        return $result;
     }
 
     /**
@@ -205,7 +197,7 @@ class MemoryCache implements Cache
      *
      * @throws \Icicle\Exception\InvalidArgumentError
      */
-    protected function lock($key)
+    protected function lock(string $key)
     {
         if (isset($this->locks[$key])) {
             throw new InvalidArgumentError('Key was already locked.');
@@ -221,7 +213,7 @@ class MemoryCache implements Cache
      *
      * @throws \Icicle\Exception\InvalidArgumentError
      */
-    protected function unlock($key)
+    protected function unlock(string $key)
     {
         if (!isset($this->locks[$key])) {
             throw new InvalidArgumentError('No lock was set on the given key.');
@@ -241,17 +233,16 @@ class MemoryCache implements Cache
      *
      * @resolve bool
      */
-    protected function wait($key)
+    protected function wait(string $key): \Generator
     {
         if (isset($this->locks[$key])) {
             do {
                 yield $this->locks[$key];
             } while (isset($this->locks[$key]));
 
-            yield true;
-            return;
+            return true;
         }
 
-        yield false;
+        return false;
     }
 }
