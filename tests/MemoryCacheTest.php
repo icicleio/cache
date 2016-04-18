@@ -336,6 +336,8 @@ class MemoryCacheTest extends \PHPUnit_Framework_TestCase
         $timeout = 0.1;
         $value = 'value';
 
+        $start = microtime(true);
+
         $coroutine1 = CoroutineNS\create(function () use ($key, $timeout, $value) {
             yield from $this->cache->update($key, function () use ($key, $timeout, $value) {
                 yield from CoroutineNS\sleep($timeout);
@@ -344,9 +346,8 @@ class MemoryCacheTest extends \PHPUnit_Framework_TestCase
         });
         $coroutine1->done();
 
-        $coroutine2 = CoroutineNS\create(function () use ($key, $timeout, $value) {
+        $coroutine2 = CoroutineNS\create(function () use ($start, $key, $timeout, $value) {
             yield from CoroutineNS\sleep(0); // Sleep for short time to allow first coroutine to enter synchronized().
-            $start = microtime(true);
             $result = yield from $this->cache->get($key); // Should wait while coroutine in update() is sleeping.
             $this->assertGreaterThan($timeout, microtime(true) - $start);
             $this->assertSame($value, $result);
@@ -366,6 +367,8 @@ class MemoryCacheTest extends \PHPUnit_Framework_TestCase
         $value1 = 'value1';
         $value2 = 'value2';
 
+        $start = microtime(true);
+
         $coroutine1 = CoroutineNS\create(function () use ($key, $timeout, $value1) {
             yield from $this->cache->update($key, function () use ($key, $timeout, $value1) {
                 yield from CoroutineNS\sleep($timeout);
@@ -374,9 +377,8 @@ class MemoryCacheTest extends \PHPUnit_Framework_TestCase
         });
         $coroutine1->done();
 
-        $coroutine2 = CoroutineNS\create(function () use ($key, $timeout, $value1, $value2) {
+        $coroutine2 = CoroutineNS\create(function () use ($start, $key, $timeout, $value1, $value2) {
             yield from CoroutineNS\sleep(0); // Sleep for short time to allow first coroutine to enter synchronized().
-            $start = microtime(true);
             $result = yield from $this->cache->update($key, function ($current) use ($value1, $value2) {
                 $this->assertSame($value1, $current);
                 return $value2;
