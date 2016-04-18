@@ -190,11 +190,10 @@ class MemoryCache implements Cache
 
         try {
             $result = (yield $callback(isset($this->data[$key]) ? $this->data[$key] : null));
+            $this->put($key, $result, $expiration);
         } finally {
             $this->unlock($key);
         }
-
-        $this->put($key, $result, $expiration);
 
         yield $result;
     }

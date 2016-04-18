@@ -6,6 +6,8 @@ use Icicle\Coroutine as CoroutineNS;
 use Icicle\Coroutine\Coroutine;
 use Icicle\Loop;
 
+class MemoryCacheTestException extends \Exception {}
+
 class MemoryCacheTest extends \PHPUnit_Framework_TestCase
 {
     /**
@@ -385,5 +387,33 @@ class MemoryCacheTest extends \PHPUnit_Framework_TestCase
         $coroutine2->done();
 
         Loop\run();
+    }
+
+    /**
+     * @depends testUpdate
+     */
+    public function testUpdateWithThrow()
+    {
+        $key = 'key';
+        $value = 'value';
+        $exception = new MemoryCacheTestException();
+
+        $coroutine1 = CoroutineNS\create(function () use ($key, $value, $exception) {
+            yield $this->cache->set($key, $value);
+            yield $this->cache->update($key, function () use ($key, $exception) {
+                throw $exception;
+                yield; // Unreachable, but makes function a coroutine.
+            });
+        });
+
+        try {
+            $coroutine1->wait();
+        } catch (MemoryCacheTestException $reason) {
+            $this->assertSame($exception, $reason);
+        }
+
+        $coroutine2 = new Coroutine($this->cache->get($key));
+
+        $this->assertSame($value, $coroutine2->wait());
     }
 }
